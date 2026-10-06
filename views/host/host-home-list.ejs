@@ -1,0 +1,31 @@
+
+<%- include('../partials/head') %> 
+</head>
+<body>
+  <%- include('../partials/nav') %>
+  <main class="container mx-auto bg-white shadow-lg rounded-lg p-8 max-w-6xl">
+    <h1 class="text-2xl text-red-500 font-bold text-center mb-6">Host Home list:</h1>
+
+    <div class="flex flex-row flex-wrap justify-center gap-6">
+      <% registeredHomes.forEach(home => { %>
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300 w-full max-w-sm">
+          <img src="<%= home.photoUrl || '/images/home1.jpg' %>" onerror="this.onerror=null; this.src='/images/home1.jpg';" alt="<%= home.homeName %>" class="w-full h-48 object-cover">
+          <div class="p-4">
+            <h3 class="text-xl font-semibold text-gray-800 mb-2"><%= home.homeName %></h3>
+            <p class="text-xl font-semibold text-gray-800 mb-2"><i class="fas fa-map-marker-alt mr-2">Address:</i> <%= home.homeAddress %></p>
+            <p class="text-lg font-bold text-gray-500"><strong>Price:</strong> $<%= home.price %></p>
+            <p class="text-gray-600 mb-2"><strong>Rating:</strong> <%= home.rating %>/10</p>
+            <a href="<%= home.photoUrl || '/images/home1.jpg' %>" target="_blank" class="text-blue-500 hover:underline">View Photo</a>
+            <a href="/host/edit-home/<%= home._id %>?editing=true" class="bg-blue-500 hover:bg-blue-600 ms-5 pl-3 pr-3 rounded-sm">Edit</a>
+
+            <form action="/host/delete-home/<%= home._id %>" method="post" class="inline">
+              <button type="submit" class="bg-red-500 hover:bg-red-600 ms-5 pl-3 pr-3 rounded-sm">Delete</button>
+          </form>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "Home Booking App",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "build": "npm run build:css",
+    "build:css": "tailwindcss -i ./views/input.css -o ./public/output.css",
+    "dev": "nodemon --exec \"node --env-file-if-exists=.env\" app.js",
+    "tailwind": "tailwindcss -i ./views/input.css -o ./public/output.css --watch",
+    "start": "node --env-file-if-exists=.env app.js"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.17",
+    "bcryptjs": "^3.0.3",
+    "connect-mongodb-session": "^5.0.0",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-session": "^1.19.0",
+    "express-validator": "^7.3.2",
+    "mongodb": "^7.5.0",
+    "mongoose": "^9.9.1",
+    "multer": "^2.2.0",
+    "mysql2": "^3.20.0",
+    "tailwindcss": "^4.1.17"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
