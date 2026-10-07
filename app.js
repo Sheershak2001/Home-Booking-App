@@ -1,3 +1,8 @@
+// to change DNS server to avoid DNS resolution issues
+const dns = require('dns');
+// change DNS
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
