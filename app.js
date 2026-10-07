@@ -1,8 +1,3 @@
-// to change DNS server to avoid DNS resolution issues
-const dns = require('dns');
-// change DNS
-dns.setServers(['1.1.1.1', '8.8.8.8']);
-
 const path = require('path');
 const express = require('express');
 const session = require('express-session');
@@ -55,21 +50,54 @@ if (!SESSION_SECRET) {
 }
 
 const app = express();
-const sessionStore = new MongoDBStore({
-  uri: MONGODB_URI,
-  collection: 'sessions',
-});
+let sessionStore;
+let sessionStoreConnection;
+let sessionMiddleware;
+const connectToSessionStore = () => {
+  if (!sessionStoreConnection) {
+    sessionStoreConnection = (async () => {
+      const store = new MongoDBStore({
+        uri: MONGODB_URI,
+        collection: 'sessions',
+      });
 
-sessionStore.on('error', (error) => {
-  console.error('MongoDB session store error:', error.message);
-});
+      store.on('error', (error) => {
+        console.error('MongoDB session store error:', error.message);
+      });
 
-let sessionStoreConnectionError;
-const sessionStoreConnection = sessionStore.initialConnectionPromise.catch(
-  (error) => {
-    sessionStoreConnectionError = error;
-  },
-);
+      try {
+        await store.initialConnectionPromise;
+      } catch (error) {
+        try {
+          await store.client.close();
+        } catch (closeError) {
+          console.error(
+            'Unable to close failed MongoDB session connection:',
+            closeError.message,
+          );
+        }
+        throw error;
+      }
+
+      sessionStore = store;
+      sessionMiddleware = session({
+        secret: SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        store: sessionStore,
+        cookie: {
+          httpOnly: true,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production',
+        },
+      });
+    })().catch((error) => {
+      sessionStoreConnection = undefined;
+      throw error;
+    });
+  }
+  return sessionStoreConnection;
+};
 
 let databaseConnection;
 const connectToDatabase = () => {
@@ -109,29 +137,12 @@ app.use('/homes/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(async (req, res, next) => {
   try {
-    await Promise.all([connectToDatabase(), sessionStoreConnection]);
-    if (sessionStoreConnectionError) {
-      throw sessionStoreConnectionError;
-    }
-    next();
+    await Promise.all([connectToDatabase(), connectToSessionStore()]);
+    sessionMiddleware(req, res, next);
   } catch (error) {
     next(error);
   }
 });
-
-app.use(
-  session({
-    secret: SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    store: sessionStore,
-    cookie: {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-    },
-  }),
-);
 
 app.use((req, res, next) => {
   req.isLoggedIn = Boolean(req.session.isLoggedIn);
@@ -179,11 +190,8 @@ app.use((error, req, res, next) => {
 
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3000;
-  Promise.all([connectToDatabase(), sessionStoreConnection])
+  Promise.all([connectToDatabase(), connectToSessionStore()])
     .then(() => {
-      if (sessionStoreConnectionError) {
-        throw sessionStoreConnectionError;
-      }
       app.listen(port, () => {
         console.log(`Server running at http://localhost:${port}`);
       });
